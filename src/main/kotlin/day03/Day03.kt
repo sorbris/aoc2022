@@ -1,7 +1,9 @@
 package day03
 
-object Day03 {
-    fun problem1() {
+import Day
+
+object Day03 : Day {
+    override fun problem1() {
         var sums = 0
         javaClass.getResource("/day03.txt")!!.readText().lines().asSequence().map { it.toCharArray() }
             .forEach { array ->
@@ -24,7 +26,7 @@ object Day03 {
         println("sum $sums")
     }
 
-    fun problem2() {
+    override fun problem2() {
         val badges = mutableListOf<Char>()
         javaClass.getResource("/day03.txt")!!.readText().lines().asSequence().windowed(3, 3, true).forEach {  members ->
             for (c in members[0]) {

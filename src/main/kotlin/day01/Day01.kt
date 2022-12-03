@@ -1,10 +1,11 @@
 package day01
 
+import Day
 import kotlin.math.max
 
-object Day01 {
+object Day01 : Day {
 
-    fun problem1() {
+    override fun problem1() {
         var max = Long.MIN_VALUE
         val content = javaClass.getResource("/day01.txt")!!.readText()
         val last = content.lines().fold(0L) { acc, row ->
@@ -22,7 +23,7 @@ object Day01 {
         println("max: $max")
     }
 
-    fun problem2() {
+    override fun problem2() {
         val content = javaClass.getResource("/day01.txt")!!.readText()
         val elves = mutableListOf<Long>()
         val last = content.lines().fold(0L) { acc, row ->

@@ -1,7 +1,9 @@
 package day02
 
-object Day02 {
-    fun problem1() {
+import Day
+
+object Day02 : Day {
+    override fun problem1() {
         val results = javaClass.getResource("/day02.txt")!!.readText().lines().map {
             val moves = it.split(" ")
             score(ops1[moves[0]]!!, ops1[moves[1]]!!)
@@ -24,7 +26,7 @@ object Day02 {
         }
     }
 
-    fun problem2() {
+    override fun problem2() {
         val results = javaClass.getResource("/day02.txt")!!.readText().lines().map {
             val moves = it.split(" ")
             val opMove = ops2[moves[0]]!!
