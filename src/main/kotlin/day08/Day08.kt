@@ -16,7 +16,6 @@ object Day08 : Day {
         var maxR:Int? = null
         var maxT:Int? = null
         var maxB:Int? = null
-        fun visible() = visibleL == true || visibleR == true || visibleT == true || visibleB == true
     }
     override fun problem1() {
         val grid = javaClass.getResource("/day08.txt")!!.readText().lines().map { it.chunked(1).map { c -> Tree(c.toInt()) } }
@@ -32,12 +31,10 @@ object Day08 : Day {
     }
 
     private fun determineVisibility(i: Int, j: Int, grid: List<List<Tree>>): Boolean {
-        val visible = (checkUp(i, j, grid) ||
+        return (checkUp(i, j, grid) ||
                 checkDown(i, j, grid) ||
                 checkLeft(i, j, grid) ||
                 checkRight(i, j, grid))
-
-        return visible
     }
 
     private fun checkUp(i: Int, j: Int, grid: List<List<Tree>>): Boolean {
@@ -51,7 +48,6 @@ object Day08 : Day {
 
         checkUp(i-1, j, grid)
         val visible = grid[i-1][j].maxT!! < tree.height
-                //                (0 until i).all { grid[it][j].height < tree.height }
         tree.visibleT = visible
         tree.maxT = max(tree.height, grid[i-1][j].maxT!!)
         return visible
@@ -69,7 +65,6 @@ object Day08 : Day {
         checkDown(i+1, j, grid)
         val maxB = grid[i+1][j].maxB!!
         val visible = maxB < tree.height
-//                (i+1..grid.lastIndex).all { grid[it][j].height < tree.height }
 
         tree.visibleB = visible
         tree.maxB = max(maxB, tree.height)
@@ -88,7 +83,6 @@ object Day08 : Day {
         checkLeft(i, j-1, grid)
         val maxL = grid[i][j-1].maxL!!
         val visible = tree.height > maxL
-//                (0 until grid[j].lastIndex).all { grid[i][it].height < tree.height }
         tree.visibleL = visible
         tree.maxL = max(maxL, tree.height)
         return visible
@@ -106,7 +100,6 @@ object Day08 : Day {
         checkRight(i, j+1, grid)
         val maxR = grid[i][j+1].maxR!!
         val visible = maxR < tree.height
-            //(j+1..grid[i].lastIndex).all { grid[i][it].height < tree.height }
         tree.visibleR = visible
         tree.maxR = max(maxR, tree.height)
         return visible
@@ -124,7 +117,7 @@ object Day08 : Day {
                     sum
                 }
             }
-        }.maxOf { it.maxOf { it } }
+        }.maxOf { row -> row.maxOf { it } }
         println("$max")
     }
 }
