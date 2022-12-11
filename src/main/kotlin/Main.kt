@@ -8,6 +8,7 @@ import day07.Day07
 import day08.Day08
 import day09.Day09
 import day10.Day10
+import day11.Day11
 
 private val all = listOf(Day01, Day02, Day03, Day04)
 fun main(args: Array<String>) {
@@ -16,8 +17,8 @@ fun main(args: Array<String>) {
     if (doAll) {
         doAll()
     } else {
-        Day10.problem1()
-        Day10.problem2()
+        Day11.problem1()
+        Day11.problem2()
     }
 }
 
