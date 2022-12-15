@@ -9,22 +9,36 @@ import day08.Day08
 import day09.Day09
 import day10.Day10
 import day11.Day11
+import day13.Day13
+import day14.Day14
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
-private val all = listOf(Day01, Day02, Day03, Day04)
+private val all = listOf(Day01, Day02, Day03, Day04, Day05, Day06, Day07, Day08, Day09, Day10, Day11, Day13)
 fun main(args: Array<String>) {
 
     val doAll = false
     if (doAll) {
         doAll()
     } else {
-        Day11.problem1()
-        Day11.problem2()
+        Day14.problem1()
+        Day14.problem2()
     }
 }
 
 private fun doAll() {
-    all.forEach {
-        it.problem1()
-        it.problem2()
-    }
+    all.map {
+        println("===${it.javaClass.simpleName}===")
+        val time = measureTimeMillis {
+            it.problem1()
+            it.problem2()
+        }
+        it to time
+    }.sortedBy { it.second }
+        .also {
+            println()
+            println("=== Days ordered by execution time ===")
+        }.forEachIndexed { index, pair ->
+            println("${index + 1}. ${pair.first.javaClass.simpleName} - ${pair.second} ms")
+        }
 }
