@@ -11,6 +11,7 @@ import day10.Day10
 import day11.Day11
 import day13.Day13
 import day14.Day14
+import day15.Day15
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
@@ -21,8 +22,8 @@ fun main(args: Array<String>) {
     if (doAll) {
         doAll()
     } else {
-        Day14.problem1()
-        Day14.problem2()
+        Day15.problem1()
+        Day15.problem2()
     }
 }
 
