@@ -33,7 +33,7 @@ object Day16 : Day {
         }
 
         val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
-        traverse(valves.first(), nonZeroes)
+        traverse(valves.find { it.name == "AA"}!!, nonZeroes)
     }
 
     private fun traverse(start: Valve, openable: Set<Valve>) {
@@ -96,7 +96,25 @@ object Day16 : Day {
 
 
     override fun problem2() {
-        javaClass.getResource("/day16-test.txt")!!.readText()
+        val valves = javaClass.getResource("/day16.txt")!!.readText()
+            .lines()
+            .map {
+                val matcher = pattern.matcher(it)
+                assert(matcher.matches())
+                Valve(matcher.group(1), matcher.group(2).toInt(), matcher.group(3).split(", "))
+            }
+
+        val valveMap = valves
+            .fold(mutableMapOf<String, Valve>()) { acc, valve ->
+                acc[valve.name] = valve
+                acc
+            }
+
+        valves.forEach {
+            getDistances(it, valveMap)
+        }
+
+        val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
     }
 }
 
