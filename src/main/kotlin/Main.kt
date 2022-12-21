@@ -13,18 +13,19 @@ import day12.Day12
 import day13.Day13
 import day14.Day14
 import day15.Day15
+import day16.Day16
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 private val all = listOf(Day01, Day02, Day03, Day04, Day05, Day06, Day07, Day08, Day09, Day10, Day11, Day13, Day14, Day15)
 fun main(args: Array<String>) {
 
-    val doAll = true
+    val doAll = false
     if (doAll) {
         doAll()
     } else {
-        Day15.problem1()
-        Day15.problem2()
+        Day16.problem1()
+        Day16.problem2()
     }
 }
 
