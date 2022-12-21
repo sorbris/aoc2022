@@ -7,8 +7,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 object Day15 : Day {
-    private val pattern = Pattern.compile("Sensor at x=(\\d+), y=(\\d+): closest beacon is at x=(\\d+), y=(\\d+)")
-
     override fun problem1() {
         val targetRow = 2000000
         val beacons = mutableListOf<Int>()
