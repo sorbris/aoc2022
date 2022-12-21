@@ -6,13 +6,14 @@ import java.util.regex.Pattern
 import kotlin.Comparator
 import kotlin.collections.ArrayDeque
 import kotlin.math.max
+import kotlin.math.min
 
 object Day16 : Day {
 
     private val pattern = Pattern.compile("Valve ([A-Z][A-Z]) has flow rate=(\\d+); tunnels? leads? to valves? ([A-ZA-Z[,\\s]*]+)") //
     override fun problem1() {
         lateinit var first: Valve
-        var potential: Int = 0
+
         val valves = javaClass.getResource("/day16.txt")!!.readText()
             .lines()
             .map {
@@ -20,97 +21,85 @@ object Day16 : Day {
                 assert(matcher.matches())
                 Valve(matcher.group(1), matcher.group(2).toInt(), matcher.group(3).split(", "))
             }
-            .apply {
-                first = first()
-            }
+
+        val valveMap = valves
             .fold(mutableMapOf<String, Valve>()) { acc, valve ->
-                potential += valve.flowRate
                 acc[valve.name] = valve
                 acc
             }
 
-        val max = traverse(first, valves, potential)
+        valves.forEach {
+            getDistances(it, valveMap)
+        }
 
+        val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
+        traverse(valves.first(), nonZeroes)
     }
 
-    private fun traverse(start: Valve, valves: Map<String, Valve>, potential: Int): Int {
+    private fun traverse(start: Valve, openable: Set<Valve>) {
+
         val queue = ArrayDeque<Target>()
-        queue.add(Target(potential, 30, 0, buildSet {
-            addAll(valves.filter { it.value.flowRate == 0 }.values)
-        }, start, setOf()))
-        var maxPressure = Integer.MIN_VALUE
+        queue.add(Target(start, 30, 0, openable))
+        var max = Integer.MIN_VALUE
         while (queue.isNotEmpty()) {
             val next = queue.removeFirst()
-            val pressure = visit(maxPressure, next.potential, next.time, next.accumulatedPressure, next.path, next.valve, valves, queue, next.visitedSinceOpening)
-
-            maxPressure = max(maxPressure, pressure)
+            val m = stuff(next.valve, next.timeRemaining, next.accumulatedPressure, next.opened, queue)
+            max = max(max, m)
         }
-
-
-        println("max: $maxPressure")
-
-        return maxPressure
+        println("max: $max")
     }
 
-    private fun visit(currentMax: Int, potential: Int, time: Int, accumulatedPressure: Int, opened: Set<Valve>, current: Valve, valves: Map<String, Valve>, queue: ArrayDeque<Target>, visitedSinceOpening: Set<Valve>): Int {
-        if (opened.size == valves.size) return accumulatedPressure
-        for (tunnel in current.tunnels) {
-            val valve = valves[tunnel]
-            if (valve != null && time > 0 && !visitedSinceOpening.contains(valve)) {
-                if (currentMax < accumulatedPressure + potential * (time - 1)) {
-                    queue.addLast(
-                        Target(
-                            potential,
-                            time - 1,
-                            accumulatedPressure,
-                            opened,
-                            valve,
-                            buildSet {
-                                addAll(visitedSinceOpening)
-                                add(current)
-                            },
-                        )
-                    )
-                }
+    private fun stuff(current: Valve, time: Int, pressure: Int, openable: Set<Valve>, queue: ArrayDeque<Target>): Int {
+        for (valve in openable) {
+            val timeToOpen = current.distances[valve.name]!! + 1
+
+            if (timeToOpen < time) {
+                val timeleft = time - timeToOpen
+                queue.addLast(Target(valve, timeleft, pressure + timeleft * valve.flowRate, buildSet {
+                    addAll(openable)
+                    remove(valve)
+                }))
             }
         }
-        if (!opened.contains(current)) {
-            val openedTime = time - 1
-            if (openedTime > 0) {
-                val nacc = accumulatedPressure + (openedTime * current.flowRate)
-                val nowOpened = buildSet {
-                    addAll(opened)
-                    add(current)
-                }
-                if (nowOpened.size == valves.size) return nacc
-                for (tunnel in current.tunnels) {
-                    val valve = valves[tunnel]
-                    if (valve != null) {
-                        queue.addLast(
-                            Target(
-                                potential - current.flowRate,
-                                openedTime - 1,
-                                nacc,
-                                buildSet {
-                                    addAll(opened)
-                                    add(current)
-                                },
-                                valve,
-                                setOf()
-                            )
-                        )
-                    }
-                }
-            }
-        }
-        return accumulatedPressure
+        return pressure
     }
+
+    private fun getDistances(current: Valve, valves: Map<String, Valve>) {
+        val visited = setOf(current)
+        val queue = ArrayDeque<Triple<Valve, Set<Valve>, Int>>()
+        for (key in current.tunnels) {
+            val valve = valves[key]!!
+            queue.add(Triple(valve, visited, 0))
+        }
+        while (queue.isNotEmpty()) {
+            val next = queue.removeFirst()
+            val distance = visit(next.first, next.second, next.third, queue, valves)
+            val cd = current.distances[next.first.name] ?: Integer.MAX_VALUE
+            current.distances[next.first.name] = min(distance, cd)
+        }
+    }
+
+    private fun visit(valve: Valve, visited: Set<Valve>, distanceTraveled: Int, queue: ArrayDeque<Triple<Valve, Set<Valve>, Int>>, all: Map<String, Valve>): Int {
+        val traveled = distanceTraveled + 1
+        val updatedVisited = buildSet {
+            addAll(visited)
+            add(valve)
+        }
+        for (key in valve.tunnels) {
+            val next = all[key]!!
+            if (!updatedVisited.contains(next)) {
+                queue.addLast(Triple(next, updatedVisited, traveled))
+            }
+        }
+        return traveled
+    }
+
 
     override fun problem2() {
         javaClass.getResource("/day16-test.txt")!!.readText()
     }
 }
 
-private data class Target(val potential: Int, val time: Int, val accumulatedPressure: Int, val path: Set<Valve>, val valve: Valve, val visitedSinceOpening: Set<Valve>)
+private data class Target(val valve: Valve, val timeRemaining: Int, val accumulatedPressure: Int, val opened: Set<Valve>)
 
-private data class Valve(val name: String, val flowRate: Int, val tunnels: List<String>)
+private data class Valve(val name: String, val flowRate: Int, val tunnels: List<String>, val distances: MutableMap<String, Int> = mutableMapOf())
