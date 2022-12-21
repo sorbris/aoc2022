@@ -29,54 +29,66 @@ object Day16 : Day {
                 acc
             }
 
-        val max = traverse(first, valves)
-        println("max: $max")
+        val max = traverse(first, valves, potential)
+
     }
 
-    private fun traverse(start: Valve, valves: Map<String, Valve>): Int {
+    private fun traverse(start: Valve, valves: Map<String, Valve>, potential: Int): Int {
         val queue = ArrayDeque<Target>()
-        queue.add(Target(30, 0, buildSet {
+        queue.add(Target(potential, 30, 0, buildSet {
             addAll(valves.filter { it.value.flowRate == 0 }.values)
         }, start, setOf()))
         var maxPressure = Integer.MIN_VALUE
         while (queue.isNotEmpty()) {
             val next = queue.removeFirst()
-            if (next.time > 0) {
-                val pressure = visit(next.time, next.accumulatedPressure, next.path, next.valve, valves, queue, next.visitedSinceOpening)
-                maxPressure = max(maxPressure, pressure)
-            }
+            val pressure = visit(maxPressure, next.potential, next.time, next.accumulatedPressure, next.path, next.valve, valves, queue, next.visitedSinceOpening)
+
+            maxPressure = max(maxPressure, pressure)
         }
+
+
+        println("max: $maxPressure")
+
         return maxPressure
     }
 
-    private fun visit(time: Int, accumulatedPressure: Int, opened: Set<Valve>, current: Valve, valves: Map<String, Valve>, queue: ArrayDeque<Target>, visitedSinceOpening: Set<Valve>): Int {
+    private fun visit(currentMax: Int, potential: Int, time: Int, accumulatedPressure: Int, opened: Set<Valve>, current: Valve, valves: Map<String, Valve>, queue: ArrayDeque<Target>, visitedSinceOpening: Set<Valve>): Int {
         if (opened.size == valves.size) return accumulatedPressure
         for (tunnel in current.tunnels) {
             val valve = valves[tunnel]
             if (valve != null && time > 0 && !visitedSinceOpening.contains(valve)) {
-                queue.addLast(
-                    Target(
-                        time - 1,
-                        accumulatedPressure,
-                        opened,
-                        valve,
-                        buildSet {
-                            addAll(visitedSinceOpening)
-                            add(current)
-                        }
+                if (currentMax < accumulatedPressure + potential * (time - 1)) {
+                    queue.addLast(
+                        Target(
+                            potential,
+                            time - 1,
+                            accumulatedPressure,
+                            opened,
+                            valve,
+                            buildSet {
+                                addAll(visitedSinceOpening)
+                                add(current)
+                            },
+                        )
                     )
-                )
+                }
             }
         }
         if (!opened.contains(current)) {
             val openedTime = time - 1
-            val nacc = accumulatedPressure + (openedTime * current.flowRate)
             if (openedTime > 0) {
+                val nacc = accumulatedPressure + (openedTime * current.flowRate)
+                val nowOpened = buildSet {
+                    addAll(opened)
+                    add(current)
+                }
+                if (nowOpened.size == valves.size) return nacc
                 for (tunnel in current.tunnels) {
                     val valve = valves[tunnel]
                     if (valve != null) {
                         queue.addLast(
                             Target(
+                                potential - current.flowRate,
                                 openedTime - 1,
                                 nacc,
                                 buildSet {
@@ -90,7 +102,6 @@ object Day16 : Day {
                     }
                 }
             }
-            return nacc
         }
         return accumulatedPressure
     }
@@ -100,6 +111,6 @@ object Day16 : Day {
     }
 }
 
-private data class Target(val time: Int, val accumulatedPressure: Int, val path: Set<Valve>, val valve: Valve, val visitedSinceOpening: Set<Valve>)
+private data class Target(val potential: Int, val time: Int, val accumulatedPressure: Int, val path: Set<Valve>, val valve: Valve, val visitedSinceOpening: Set<Valve>)
 
 private data class Valve(val name: String, val flowRate: Int, val tunnels: List<String>)
