@@ -12,8 +12,6 @@ object Day16 : Day {
 
     private val pattern = Pattern.compile("Valve ([A-Z][A-Z]) has flow rate=(\\d+); tunnels? leads? to valves? ([A-ZA-Z[,\\s]*]+)") //
     override fun problem1() {
-        lateinit var first: Valve
-
         val valves = javaClass.getResource("/day16.txt")!!.readText()
             .lines()
             .map {
@@ -33,23 +31,82 @@ object Day16 : Day {
         }
 
         val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
-        traverse(valves.find { it.name == "AA"}!!, nonZeroes)
+        traverse(valves.find { it.name == "AA"}!!, nonZeroes, 30)
     }
 
-    private fun traverse(start: Valve, openable: Set<Valve>) {
+    override fun problem2() {
+        val valves = javaClass.getResource("/day16.txt")!!.readText()
+            .lines()
+            .map {
+                val matcher = pattern.matcher(it)
+                assert(matcher.matches())
+                Valve(matcher.group(1), matcher.group(2).toInt(), matcher.group(3).split(", "))
+            }
 
+        val valveMap = valves
+            .fold(mutableMapOf<String, Valve>()) { acc, valve ->
+                acc[valve.name] = valve
+                acc
+            }
+
+        valves.forEach {
+            getDistances(it, valveMap)
+        }
+
+        val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
+        traverse(valves.find { it.name == "AA"}!!, nonZeroes, 26, true)
+    }
+
+    private fun traverse(start: Valve, openable: Set<Valve>, time: Int, two: Boolean = false) {
+        val keys = mutableMapOf<String, Long>()
+        var k = 1L
+        openable.forEachIndexed { i, v ->
+            val key = k.shl(i)
+            keys[v.name] = key
+        }
+        val scores = mutableMapOf<Long, Int>()
         val queue = ArrayDeque<Target>()
-        queue.add(Target(start, 30, 0, openable))
+        queue.add(Target(start, time, 0, openable, emptySet()))
         var max = Integer.MIN_VALUE
         while (queue.isNotEmpty()) {
             val next = queue.removeFirst()
-            val m = stuff(next.valve, next.timeRemaining, next.accumulatedPressure, next.opened, queue)
-            max = max(max, m)
+            val m = visit(next.valve, next.timeRemaining, next.accumulatedPressure, next.openable, queue, next.visited)
+            val key = getKey(next.visited, next.valve, keys)
+            max = max(m, max)
+            scores[key] = max(m, scores[key] ?: Integer.MIN_VALUE)
+        }
+        if (two) {
+            max = findBestCombo(scores)
         }
         println("max: $max")
     }
 
-    private fun stuff(current: Valve, time: Int, pressure: Int, openable: Set<Valve>, queue: ArrayDeque<Target>): Int {
+    private fun findBestCombo(scores: Map<Long, Int>): Int {
+        var keys = scores.keys.toList()
+        var max = Integer.MIN_VALUE
+        for (i in keys.indices - 1) {
+            val f = keys[i]
+            for (j in i + 1 .. keys.lastIndex) {
+                val s = keys[j]
+                if (s and f == 0L) {
+                    max = max(max, scores[f]!! + scores[s]!!)
+                }
+            }
+        }
+        return max
+    }
+
+    private fun getKey(visited: Set<Valve>, current: Valve, translation: Map<String, Long>): Long {
+        var key = translation[current.name] ?: 0
+
+        for (v in visited) {
+            key = key or translation[v.name]!!
+        }
+
+        return key
+    }
+
+    private fun visit(current: Valve, time: Int, pressure: Int, openable: Set<Valve>, queue: ArrayDeque<Target>, visited: Set<Valve>): Int {
         for (valve in openable) {
             val timeToOpen = current.distances[valve.name]!! + 1
 
@@ -58,6 +115,9 @@ object Day16 : Day {
                 queue.addLast(Target(valve, timeleft, pressure + timeleft * valve.flowRate, buildSet {
                     addAll(openable)
                     remove(valve)
+                }, buildSet {
+                    addAll(visited)
+                    add(valve)
                 }))
             }
         }
@@ -93,31 +153,8 @@ object Day16 : Day {
         }
         return traveled
     }
-
-
-    override fun problem2() {
-        val valves = javaClass.getResource("/day16.txt")!!.readText()
-            .lines()
-            .map {
-                val matcher = pattern.matcher(it)
-                assert(matcher.matches())
-                Valve(matcher.group(1), matcher.group(2).toInt(), matcher.group(3).split(", "))
-            }
-
-        val valveMap = valves
-            .fold(mutableMapOf<String, Valve>()) { acc, valve ->
-                acc[valve.name] = valve
-                acc
-            }
-
-        valves.forEach {
-            getDistances(it, valveMap)
-        }
-
-        val nonZeroes = valves.filter { it.flowRate > 0 }.toSet()
-    }
 }
 
-private data class Target(val valve: Valve, val timeRemaining: Int, val accumulatedPressure: Int, val opened: Set<Valve>)
+private data class Target(val valve: Valve, val timeRemaining: Int, val accumulatedPressure: Int, val openable: Set<Valve>, val visited: Set<Valve>)
 
 private data class Valve(val name: String, val flowRate: Int, val tunnels: List<String>, val distances: MutableMap<String, Int> = mutableMapOf())
