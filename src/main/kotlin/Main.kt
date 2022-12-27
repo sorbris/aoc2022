@@ -25,7 +25,7 @@ fun main(args: Array<String>) {
     if (doAll) {
         doAll()
     } else {
-        Day17.problem1()
+        //Day17.problem1()
         Day17.problem2()
     }
 }

@@ -34,22 +34,17 @@ object Day17 : Day {
         val fulls = mutableListOf<Int>()
         for (i in 0..2021) {
             val index = i.mod(rocks.size)
-            val (ny, fy) = dropRock(rocks, index, y, chamber, winds)
-            y = ny + 3
-            if (fy != -1) fulls.add(fy)
+            y = dropRock(rocks, index, y, chamber, winds) + 3
         }
         println("max: ${y - 3}")
     }
 
-    private fun dropRock(rocks: List<Rock>, rockIndex: Int, y: Int, chamber: List<RockColumn>, winds: Winds, hashes: MutableList<Int>? = null): Pair<Int, Int> {
+    private fun dropRock(rocks: List<Rock>, rockIndex: Int, y: Int, chamber: List<RockColumn>, winds: Winds, hashes: MutableList<Pair<Int, Int>>? = null): Int {
         val rock = rocks[rockIndex]
         var ry = y
         var rx = 2
         var resting = false
-        if (hashes != null) {
-            val hash = Objects.hash(winds.i, rockIndex, chamber.map { it[y - 3] })
-            hashes.add(hash)
-        }
+
         while (!resting) {
             val direction = winds.getNext()
             // first check if we are inside the bounds
@@ -97,11 +92,14 @@ object Day17 : Day {
             }
         }
 
-        var found = -1
-        for (i in rock.cols.first().indices) {
-            if (chamber.all { it[i + ry] }) found = i + ry
+        val res = max(y - 3, ry + rock.cols.first().size)
+        if (hashes != null) {
+            val hash = Objects.hash(winds.i, rockIndex, chamber.map { it[y - 3] })
+            hashes.add(hash to res)
         }
-        return max(y - 3, ry + rock.cols.first().size) to found
+        if (hashes != null && rockIndex == 0)
+        println("total: ${hashes.size}, rockIndex: $rockIndex, wind: ${winds.i}, height: $res")
+        return res
     }
 
     override fun problem2() {
@@ -110,30 +108,89 @@ object Day17 : Day {
             else 1
         }
         val winds = Winds(pattern)
-        var chamber = createChamber()
+        val chamber = createChamber()
         var y = 3
 
 
-        val hashes = mutableListOf<Int>()
-        var saved = 0L
+        val hashes = mutableListOf<Pair<Int, Int>>()
 
-        var patternFound = false
-        for (i in 0..2021) {
+        for (i in 0 until  10000) {
             val index = i.mod(rocks.size)
-            val (ny, fy) = dropRock(rocks, index, y, chamber, winds, hashes)
-            if (fy != -1) {
-                saved += fy
-                y = fy + 4
-                chamber = createChamber()
-            } else {
-                y = ny + 3
-            }
-
+            y = dropRock(rocks, index, y, chamber, winds, hashes) + 3
         }
-        println("max: ${(saved + y) - 3}")
+
+        var start = -1
+        var step = -1
+        var height = -1
+//        outer@for (i in IntProgression.fromClosedRange(hashes.lastIndex, 1, -5)) {
+//            val target = hashes[i].first
+//
+//            for (j in IntProgression.fromClosedRange(i - 5, 0, -5)) {
+//                if (hashes[j].first == target) {
+//                    start = i
+//                    step = i - j
+//                    height = hashes[i].second - hashes[j].second
+//                    break@outer
+//                }
+//            }
+//        }
+        outer@for (i in IntProgression.fromClosedRange(0, hashes.lastIndex, 5)) {
+            for (j in IntProgression.fromClosedRange(i + 5, hashes.lastIndex, 5)) {
+                val target = hashes[i].first
+                if (hashes[j].first == target) {
+                    start = i
+                    step = j - i
+                    height = hashes[j].second - hashes[i].second
+                    break@outer
+                }
+            }
+        }
 
 
 
+//        outer@for (i in hashes.lastIndex downTo 1) {
+//            val target = hashes[i].first
+//            for (j in i - 1 downTo 0) {
+//                if (hashes[j].first == target) {
+//                    start = i
+//                    step = i - j
+//                    height = hashes[i].second - hashes[j].second
+//                    break@outer
+//                }
+//            }
+//        }
+
+        println("start: $start")
+        println("step: $step")
+        println("height: $height")
+
+        val l = 1000000000000L - start
+        var rockCount: Long = hashes[start - 1].second.toLong()
+        val d = l/step.toLong()
+        println("calculated = ${rockCount + (d*height)}")
+
+
+
+        var steps: Long = start.toLong()
+        while (steps + step < 1000000000000L - 1) {
+
+            steps += step
+            rockCount += height
+        }
+
+        val left = 1000000000000L - 1 - steps
+
+        println("steps left: $left")
+        println("count so far: $rockCount")
+        println("diff = ${1514285714288 - rockCount}")
+
+        println("startheight: ${hashes[start].second}")
+        println("startheight2: ${hashes[start + left.toInt()].second}")
+        val hd = hashes[start + left.toInt()].second - hashes[start].second
+        println("heightdiff = $hd")
+        rockCount += (hashes[start + left.toInt()].second - hashes[start].second)
+        println("after addition: $rockCount")
+        println("diff = ${1514285714288 - rockCount}")
     }
 
     private fun createChamber() = mutableListOf(
@@ -164,8 +221,4 @@ data class Winds(val pattern: List<Int>, var i: Int = 0) {
     }
 }
 @Suppress("ArrayInDataClass")
-private data class Rock(val cols: List<BooleanArray>) {
-    fun width() = cols.size
-}
-
-private class RestingRock(val x: Int, val y: Int, rock: Rock)
+private data class Rock(val cols: List<BooleanArray>)
