@@ -31,7 +31,6 @@ object Day17 : Day {
         )
         var y = 3
 
-        val fulls = mutableListOf<Int>()
         for (i in 0..2021) {
             val index = i.mod(rocks.size)
             y = dropRock(rocks, index, y, chamber, winds) + 3
@@ -94,11 +93,17 @@ object Day17 : Day {
 
         val res = max(y - 3, ry + rock.cols.first().size)
         if (hashes != null) {
-            val hash = Objects.hash(winds.i, rockIndex, chamber.map { it[y - 3] })
-            hashes.add(hash to res)
+            if (res > 100) {
+                val sb = StringBuilder()
+                (0 until 100).map { chamber.map { c -> if (c[y - 3 - it]) sb.append("x") else sb.append("#") } }
+
+                val hash = Objects.hash(winds.i, rockIndex, sb.toString())
+                hashes.add(hash to res)
+            } else {
+                hashes.add(-1 to res)
+            }
         }
-        if (hashes != null && rockIndex == 0)
-        println("total: ${hashes.size}, rockIndex: $rockIndex, wind: ${winds.i}, height: $res")
+
         return res
     }
 
@@ -122,21 +127,11 @@ object Day17 : Day {
         var start = -1
         var step = -1
         var height = -1
-//        outer@for (i in IntProgression.fromClosedRange(hashes.lastIndex, 1, -5)) {
-//            val target = hashes[i].first
-//
-//            for (j in IntProgression.fromClosedRange(i - 5, 0, -5)) {
-//                if (hashes[j].first == target) {
-//                    start = i
-//                    step = i - j
-//                    height = hashes[i].second - hashes[j].second
-//                    break@outer
-//                }
-//            }
-//        }
+
         outer@for (i in IntProgression.fromClosedRange(0, hashes.lastIndex, 5)) {
             for (j in IntProgression.fromClosedRange(i + 5, hashes.lastIndex, 5)) {
                 val target = hashes[i].first
+                if (target == -1) continue@outer
                 if (hashes[j].first == target) {
                     start = i
                     step = j - i
@@ -146,51 +141,13 @@ object Day17 : Day {
             }
         }
 
-
-
-//        outer@for (i in hashes.lastIndex downTo 1) {
-//            val target = hashes[i].first
-//            for (j in i - 1 downTo 0) {
-//                if (hashes[j].first == target) {
-//                    start = i
-//                    step = i - j
-//                    height = hashes[i].second - hashes[j].second
-//                    break@outer
-//                }
-//            }
-//        }
-
-        println("start: $start")
-        println("step: $step")
-        println("height: $height")
-
-        val l = 1000000000000L - start
-        var rockCount: Long = hashes[start - 1].second.toLong()
-        val d = l/step.toLong()
-        println("calculated = ${rockCount + (d*height)}")
-
-
-
-        var steps: Long = start.toLong()
-        while (steps + step < 1000000000000L - 1) {
-
-            steps += step
-            rockCount += height
-        }
-
-        val left = 1000000000000L - 1 - steps
-
-        println("steps left: $left")
-        println("count so far: $rockCount")
-        println("diff = ${1514285714288 - rockCount}")
-
-        println("startheight: ${hashes[start].second}")
-        println("startheight2: ${hashes[start + left.toInt()].second}")
-        val hd = hashes[start + left.toInt()].second - hashes[start].second
-        println("heightdiff = $hd")
-        rockCount += (hashes[start + left.toInt()].second - hashes[start].second)
-        println("after addition: $rockCount")
-        println("diff = ${1514285714288 - rockCount}")
+        val l = 1000000000000L - (start)
+        val startHeight: Long = hashes[start - 1].second.toLong()
+        val fullCycles = l / step
+        val partial = l.rem(step)
+        val partialHeight = hashes[start + partial.toInt()].second - hashes[start].second
+        val sum = startHeight + (fullCycles * height) + partialHeight
+        println("sum: $sum")
     }
 
     private fun createChamber() = mutableListOf(
